@@ -1,130 +1,125 @@
-# DDS2 Randomizer (数码恶魔传说2 天魔变 随机化工具)
+# DDS2 Randomizer（《数码恶魔传说2：天魔变》随机化工具）
 
-A randomizer for the Chinese-patched PS2 release of *Shin Megami Tensei:
-Digital Devil Saga 2* (`DDSAGA2.iso`, SLPM_657.95).
+适用于Mark汉化组汉化的《数码恶魔传说2》
+（`DDSAGA2.iso`，SLPM_657.95）的随机化工具。
 
-It reads the game ISO, randomizes several layers of the game data and writes
-a new, playable ISO.  Every patched file keeps its original byte size, so the
-`DDS3.DDT` index and the ISO9660 filesystem are never rebuilt.
+它会读取游戏 ISO，对多层游戏数据进行随机化，并产生一个新的可游玩 ISO。
+每个经过修补的文件都保持原始字节大小，因此无需重建 `DDS3.DDT` 索引和 ISO9660 文件系统。
 
-## Quick start
+## 快速开始
 
 ```bash
-# GUI (PySide2) - every layer has its own switch
-python dds2_randomizer_gui.py        # or double-click run_gui.bat
+# 图形界面（PySide2）——每一层都有独立开关
+python dds2_randomizer_gui.py        # 或双击 run_gui.bat
 
-# command line
+# 命令行
 python dds2_randomizer.py --iso DDSAGA2.iso --out DDS2_random.iso --seed 1234
 
-# only some layers
+# 仅启用部分层
 python dds2_randomizer.py --only encounters --seed 42
 python dds2_randomizer.py --only bosses    --seed 42
 python dds2_randomizer.py --only text      --seed 42
 
-# Mantra (曼斗罗) skills are randomized by default; these are the knobs
+# 默认会随机化曼斗罗（Mantra）技能；以下是相关选项
 python dds2_randomizer.py --mantra-mode sets --seed 42
 python dds2_randomizer.py --mantra-costs --seed 42
 python dds2_randomizer.py --no-mantras --seed 42
 
-# cosmetic: the protagonist's demon form (Varuna) becomes Black Varuna
+# 外观选项：将主角的恶魔形态（伐楼罗）变为黑色伐楼罗
 python dds2_randomizer.py --black-varuna --seed 42
 
-# let bosses and elite enemies answer the Analyse command with real data
+# 让 Boss 和精英敌人在使用“分析”指令时显示真实数据
 python dds2_randomizer.py --reveal-enemies --seed 42
 
-# self test (needs the game image for the parsing checks)
+# 自我测试（解析检查需要游戏镜像）
 python selftest.py [path/to/DDSAGA2.iso]
 python selftest_gui.py
 ```
 
-The GUI settings map 1:1 onto `Config` and can be saved to / loaded from a
-JSON file, which the command line front end accepts with `--config`.
+图形界面中的设置与 `Config` 一一对应，可保存到 JSON 文件或从 JSON 文件加载；
+命令行前端可通过 `--config` 接受该文件。
 
-## What gets randomized
+## 随机化内容
 
-Every layer is optional.
+每一层都是可选的。
 
-### 1. Normal (random) encounters
-* The pool is every enemy id referenced by a **non-story** encounter record
-  whose HP is sane; the pool is permuted into a 1:1 bijection, so enemy A
-  becomes enemy B, C becomes D, and so on.
-* The destination unit keeps the **appearance / name / model** it was assigned
-  and takes the **level, HP, MP, the five stats and the skill list** of the
-  enemy that used to stand in that slot - so a spawn point keeps its original
-  difficulty and only the look changes.
-* `--stats-mode copy` (default) takes the five stats verbatim, `scale` only
-  matches their sum.
-* Enemies in a **ban list** (`--ban-file`, `--ban`) are removed from the pool,
-  and the encounter records that used them are rewritten to another encounter
-  from the same block, so that spawn point still works.
+### 1. 普通（随机）遭遇战
+* 候选池包含所有被**非剧情**遭遇战记录引用、且 HP 数值合理的敌人 ID；
+  候选池会以一一对应的双射方式重新排列，因此敌人 A 会变成敌人 B，
+  C 会变成 D，以此类推。
+* 目标单位保留其被分配的**外观／名称／模型**，并取得原本位于该槽位敌人的
+  **等级、HP、MP、五项属性和技能列表**。因此，刷怪点会保持原有难度，
+  只有外观发生变化。
+* `--stats-mode copy`（默认）会原样复制五项属性，`scale` 则仅使属性总和一致。
+* **禁用列表**（`--ban-file`、`--ban`）中的敌人会从候选池中移除，
+  原先使用这些敌人的遭遇战记录会改写为同一区块中的另一场遭遇战，
+  以确保该刷怪点仍然有效。
 
-### 2. Enemy AI follows the new skills
-An enemy's AI is keyed by its id, so after the swap it still named its *old*
-skills.  `/battle/AICALC.TBL` turns out to be two things:
+### 2. 敌人 AI 跟随新技能
+敌人的 AI 按其 ID 索引，因此交换后，AI 仍然会引用其*原有*技能。
+`/battle/AICALC.TBL` 实际上包含两部分：
 
-* a **flat action table** - 395 records of 348 bytes, 36 actions of 8 bytes,
-  `[u16 weight][u16 skill][u16 cond][u16 cond param]`.  Record `k` belongs to
-  UNIT record `k + 128`, so each unit is re-pointed with **its own** skill map.
-* two **FlowScript modules** (`FLW0`): the named battle AIs choose with
-  `PUSHIS <skill>; COMM AI_ACT_SKILL`.  All 853 of those operands are re-pointed
-  through the merged map.
+* 一张**扁平动作表**：395 条记录，每条 348 字节，包含 36 个动作，
+  每个动作 8 字节，格式为
+  `[u16 weight][u16 skill][u16 cond][u16 cond param]`。记录 `k` 属于
+  UNIT 记录 `k + 128`，因此每个单位都会根据**其自身**的技能映射重新指向。
+* 两个 **FlowScript 模块**（`FLW0`）：具名战斗 AI 通过
+  `PUSHIS <skill>; COMM AI_ACT_SKILL` 进行选择。所有 853 个此类操作数
+  都会通过合并后的映射重新指向。
 
-Only those skill operands are touched.  `selftest.py` proves it byte by byte:
-*"only skill ids touched (N changed, 0 stray)"*.
+只有这些技能操作数会被修改。`selftest.py` 会逐字节验证：
+*“仅修改技能 ID（N 处变更，0 处意外修改）”*。
 
-### 3. Boss battles (剧情战斗) — **shielded**
-* Story battles are already shaken up through the ordinary enemy permutation,
-  so the dedicated story-battle pass is **off by default** and the GUI no
-  longer exposes it.  The code is intact; re-enable it with `--bosses`.
-* It works by detecting story battles from the **battle event scripts**: every
-  `/event/**/*.be` file stores its encounter record index at header offset
-  `0x50` and repeats it in its `eNNN_<index>.BED` resource names.  Those 27
-  records are the scripted battles (record 51 is the first boss,
-  `[41, 40, 41]` = two Andras + one Vetala).
-* When enabled it permutes those line-ups and rescales each enemy so its HP and
-  stat sum match the average of the enemies that used to be there.
-* A dedicated boss shuffle with its own swap / rescale controls is planned for
-  later; see `docs/METHOD_ENEMY_SWAP.md` section 2.9.
+### 3. Boss 战（剧情战斗）——**默认停用保护**
+* 剧情战斗已经通过普通敌人置换发生了变化，因此专门的剧情战斗处理
+  **默认关闭**，图形界面也不再提供该选项。代码仍完整保留；
+  可使用 `--bosses` 重新启用。
+* 它通过**战斗事件脚本**检测剧情战斗：每个 `/event/**/*.be` 文件都会在
+  头部偏移 `0x50` 处存储其遭遇战记录索引，并在其
+  `eNNN_<index>.BED` 资源名称中重复该索引。这 27 条记录就是脚本战斗
+  （记录 51 是第一个 Boss，`[41, 40, 41]` = 两个 Andras 加一个 Vetala）。
+* 启用后，它会置换这些阵容，并重新缩放每个敌人，使其 HP 和属性总和
+  与原本位于该位置的敌人平均值一致。
+* 计划在以后加入具有独立交换／重新缩放控制的专用 Boss 洗牌功能；
+  请参阅 `docs/METHOD_ENEMY_SWAP.md` 第 2.9 节。
 
-### 3a. Bosses become analysable (分析) — **verified in game**
-Bosses and elite enemies normally answer the Analyse command with "?" instead
-of HP / MP / skills.  The analyse window's row functions (table at `0x415650`)
-branch to a "?" placeholder drawer (`0x1B8930`) through **thirteen**
-`bnel flag,zero,<placeholder>` guards in `SLPM_657.95`; the flags they test are
-the encounter's `ENCOUNT.TBL +32` bit 0, the unit template's `+0` bit 0x800 and
-the unit's category byte (`UNIT.TBL +70`, `0xFF` on all 79 boss units).
+### 3a. Boss 可被分析——**已在游戏中验证**
+Boss 和精英敌人通常会对“分析”指令显示“?”，而不是 HP／MP／技能。
+分析窗口的行函数（表位于 `0x415650`）会通过 `SLPM_657.95` 中的
+**十三处** `bnel flag,zero,<placeholder>` 保护分支，跳转到“?”占位绘制器
+（`0x1B8930`）；这些分支检测的标志包括遭遇战记录的
+`ENCOUNT.TBL +32` 第 0 位、单位模板的 `+0` 第 0x800 位，以及单位类别字节
+（`UNIT.TBL +70`，全部 79 个 Boss 单位均为 `0xFF`）。
 
-Clearing those data bytes does reveal the values, but `+70` is read by the
-battle logic too, and rewriting the bosses' `0xFF` to `0` **hangs the game
-while loading a boss battle**.  So `--reveal-enemies` patches the code instead:
-every guard's compare register becomes `$zero`, i.e. `bnel zero,zero,<same
-target>` — never taken, delay slot still nullified, which is exactly the
-"flag not set" path.  Only the `rs` field of those thirteen words changes;
-`UNIT.TBL` and `ENCOUNT.TBL` are left untouched.
+清除这些数据字节确实可以显示数值，但战斗逻辑也会读取 `+70`；
+将 Boss 的 `0xFF` 改写为 `0` 会**导致游戏在加载 Boss 战时卡死**。
+因此，`--reveal-enemies` 改为修补代码：每处保护分支的比较寄存器都变为
+`$zero`，即 `bnel zero,zero,<same target>`——分支永远不会发生，
+延迟槽仍会被取消，正好等同于“未设置标志”的路径。这十三个字中，
+只有 `rs` 字段会改变；`UNIT.TBL` 和 `ENCOUNT.TBL` 保持不变。
 
-**Verified in game**: analysing a boss now shows real **level / HP / MP**.
+**已在游戏中验证**：现在分析 Boss 会显示真实的**等级／HP／MP**。
 
-**Known boundary**: the **skill row still shows "?"**.  That is not a hidden
-flag - the row lists the unit record's skill slots and only 31 of the 79 boss
-units carry any; a boss's actual actions come from the `AICALC.TBL` AI scripts,
-which is a different thing.  So that row has no real value to show and is left
-as it is.  See `docs/METHOD_ENEMY_SWAP.md` §7.7.
+**已知限制**：**技能行仍显示“?”**。这不是某个隐藏标志造成的——
+该行列出的是单位记录中的技能槽，而 79 个 Boss 单位中只有 31 个带有技能；
+Boss 的实际动作来自 `AICALC.TBL` 中的 AI 脚本，这是另一套数据。
+因此，该行没有可显示的真实数值，故保持原样。
+请参阅 `docs/METHOD_ENEMY_SWAP.md` 第 7.7 节。
 
-The GUI exposes it on the "敌人" tab, off by default.
+图形界面在“敌人”选项卡中提供此功能，默认关闭。
 
-### 3b. Mantra (曼斗罗) skill sets and stat bonuses — **on by default**
-The Mantra system is split over two files, and only the second one holds the
-skills and the stat bonuses:
+### 3b. 曼斗罗（Mantra）技能组与属性加成——**默认开启**
+曼斗罗系统分布在两个文件中，只有第二个文件保存技能和属性加成：
 
-* `/facility/data/mtrMantraBlockData.tbl` (inside `DDS3.IMG`) is the **hex grid
-  only**: 176 records of 32 bytes - `flag(rank<<4|type)`, `id`, the two grid
-  coordinates `A/B` and six neighbour links.  There are no skills in it: the
-  section after the records is exactly the list of non-zero neighbour fields
-  (456 entries = 2 x 228 links).
-* The **cost, the permanent stat bonus and the skill list** live in the game
-  executable, `SLPM_657.95`, which sits at the ISO9660 root and is *not* part of
-  `DDS3.IMG`.  A table of 176 records of 36 bytes starts at file offset
-  `0x301388`, indexed by the mantra id:
+* `/facility/data/mtrMantraBlockData.tbl`（位于 `DDS3.IMG` 内）
+  **仅包含六边形网格**：176 条记录，每条 32 字节，字段包括
+  `flag(rank<<4|type)`、`id`、两个网格坐标 `A/B` 和六个相邻节点链接。
+  其中没有技能：记录之后的部分恰好是非零相邻字段的列表
+  （456 项 = 2 × 228 个链接）。
+* **费用、永久属性加成和技能列表**位于游戏可执行文件
+  `SLPM_657.95` 中。该文件位于 ISO9660 根目录，*不属于* `DDS3.IMG`。
+  从文件偏移 `0x301388` 开始，有一张包含 176 条记录的表，
+  每条 36 字节，按曼斗罗 ID 索引：
 
   ```
   +0x00 u32 cost
@@ -134,260 +129,242 @@ skills and the stat bonuses:
   +0x20 u16 group (grid column)
   ```
 
-  Only the 8 story-given event mantras (145..152) carry a bonus - 24 points in
-  total, e.g. 151 is "all five stats +1", 147 is "AGI+3".
+  只有剧情事件赋予的 8 个曼斗罗（145..152）带有加成——总计 24 点。
+  例如，151 是“五项属性全部 +1”，147 是“AGI+3”。
 
-`--mantras` (default mode `--mantra-mode skills`) pools every skill of every
-teaching mantra, shuffles the pool, and deals it back out so that **each mantra
-keeps the number of skills it had** but no longer teaches any of its own: 107
-mantras, 267 skill slots, average ~2.5 original source mantras per new skill
-list.  `--mantra-mode sets` is the older, coarser behaviour where whole skill
-sets are traded 1:1 (so a mantra ends up with exactly another mantra's set).
-Either way the total pool of skills is only permuted.  The five-stat bonus
-vectors are permuted among the 8 nodes that have one, so the point total stays
-at 24.  `--mantra-costs` also permutes the cost.
+`--mantras`（默认模式为 `--mantra-mode skills`）会汇集每个可学习曼斗罗的
+所有技能，洗乱技能池后再重新分配，使**每个曼斗罗保留原有的技能数量**，
+但不再教授其原有技能：共 107 个曼斗罗、267 个技能槽，
+新技能列表平均每个技能来自约 2.5 个不同的原曼斗罗。
+`--mantra-mode sets` 是较旧、较粗略的行为，会以 1:1 的方式交换整套技能
+（因此一个曼斗罗最终会恰好获得另一个曼斗罗的技能组）。
+无论采用哪种方式，技能总池都只进行置换。五属性加成向量只会在
+拥有加成的 8 个节点之间置换，因此总点数保持为 24。
+`--mantra-costs` 还会置换费用。
 
-Only the bonus and skill fields change, so the ELF keeps its exact size and
-every offset in it stays valid (self test: 495 bytes changed, 0 stray).
-A character's learned skills are *derived* from the mantra table by the game
-itself, so the characters that start with mantras already know follow the new
-skills automatically: the new-game/chapter entry (`0x118598`) clears the player
-data and then re-applies every learned mantra (`0x313930` -> `0x3137f8` ->
-`0x313f98`).  Nothing in the image has to be kept in sync for that, and the
-starting skill sets were confirmed to change correctly in game.
+只有加成和技能字段会改变，因此 ELF 保持精确大小，其中所有偏移仍然有效
+（自我测试：495 字节发生变化，0 处意外修改）。角色已学会的技能由游戏
+*根据*曼斗罗表推导，因此开局便已学会某些曼斗罗的角色会自动跟随新技能：
+新游戏／章节入口（`0x118598`）会清除玩家数据，然后重新应用每个已学会的
+曼斗罗（`0x313930` -> `0x3137f8` -> `0x313f98`）。镜像中无需为此同步
+维护任何其他内容；初始技能组已在游戏中确认能够正确变化。
 
-This layer is **on by default** (verified in game); use `--no-mantras` to turn it
-off.  The GUI exposes it on the "文本与语音" tab, and a `<out>_mantras.txt`
-reference table (id / cost / bonus / skills) is written next to the output ISO.
+此层**默认开启**（已在游戏中验证）；使用 `--no-mantras` 可将其关闭。
+图形界面在“文本与语音”选项卡中提供此功能，并会在输出 ISO 旁写入一份
+`<out>_mantras.txt` 参考表（ID／费用／加成／技能）。
 
-### 3c. Demon form model swap - Black Varuna (opt-in, cosmetic)
-The protagonist (萨弗 / Serph) turns into **Varuna (伐楼罗)**.  That model is
-`/model/human/pc011_on.PB` plus `/model/human/pc011.PB`: the party's atma slots
-are indexed by the pointer tables at `SLPM_657.95` va `0x3C1BEC` (`pcNNN.PB`) and
-va `0x3C2EAC` (`pcNNN_on.PB`), entry `0x11` resolves to `pc011`, and both files
-name their body node **`varna_body`** with the model root `x101_root`.
+### 3c. 恶魔形态模型替换——黑色伐楼罗（可选，外观）
+主角（萨弗／Serph）会变身为**伐楼罗（Varuna）**。该模型由
+`/model/human/pc011_on.PB` 和 `/model/human/pc011.PB` 组成：
+队伍的阿特玛槽位由 `SLPM_657.95` 中虚拟地址 `0x3C1BEC`
+（`pcNNN.PB`）和虚拟地址 `0x3C2EAC`（`pcNNN_on.PB`）处的指针表索引；
+条目 `0x11` 解析为 `pc011`，两个文件都将其身体节点命名为
+**`varna_body`**，模型根节点为 `x101_root`。
 
-With `--black-varuna` (GUI: the checkbox on the "文本与语音" tab, off by default)
-the two models get the **Black Varuna textures**.  A `.PB` model is a flat list
-of `[u32 type][u32 size][magic]` chunks (`PIB0` skeleton, `TXP0` textures,
-`MD00` mesh, `MT00` materials, `END0`) padded to 0x40, and `pc011`,
-`pc011_on` and the e639 event models `kuro_varuna` / `siro_varna` all carry a
-**byte-identical 199936 byte `TXP0` chunk** (3 x 256x256, format 19).  So only
-that one chunk is replaced, with the darker `kuro_varuna` set (palette mean 753
-vs Varuna's 1080).  A byte-identical copy of it sits at `/model/devil/10E.PB`
-offset `0x3B040` (and the white `siro_varna` set at `/model/devil/10F.PB`
-`0x1D340`).
+使用 `--black-varuna` 时（图形界面：“文本与语音”选项卡中的复选框，
+默认关闭），这两个模型会获得**黑色伐楼罗纹理**。`.PB` 模型是由
+`[u32 type][u32 size][magic]` 区块组成的扁平列表（`PIB0` 骨骼、
+`TXP0` 纹理、`MD00` 网格、`MT00` 材质、`END0`），按 0x40 对齐填充；
+`pc011`、`pc011_on` 以及 e639 事件模型 `kuro_varuna`／`siro_varna`
+都包含一个**逐字节完全相同、大小为 199936 字节的 `TXP0` 区块**
+（3 × 256×256，格式 19）。因此，只替换这一个区块，使用更暗的
+`kuro_varuna` 纹理集（调色板平均值为 753，而伐楼罗为 1080）。
+`/model/devil/10E.PB` 的偏移 `0x3B040` 处有其逐字节相同的副本
+（白色 `siro_varna` 纹理集位于 `/model/devil/10F.PB` 的 `0x1D340`）。
 
-Skeleton, mesh, materials and every offset stay untouched, so the DDT index and
-`DDS3.IMG` never move.  Copying the whole `/model/devil/10E.PB` file instead was
-tried first and **hung the game** when the transformation model loaded - `10E`
-is not a valid playable-character model.  Not verified in game yet; see
-`docs/METHOD_ENEMY_SWAP.md` §13.
+骨骼、网格、材质和所有偏移均保持不变，因此 DDT 索引和 `DDS3.IMG`
+不会移动。最初曾尝试直接复制整个 `/model/devil/10E.PB` 文件，
+但在加载变身模型时**导致游戏卡死**——`10E` 不是有效的可操作角色模型。
+尚未在游戏中验证；请参阅 `docs/METHOD_ENEMY_SWAP.md` 第 13 节。
 
-### 4. Dialogue - CG subtitles, equal-length swap by default
-The subtitle text lives in the **`MSG1` table inside each movie file**:
+### 4. 对话——CG 字幕，默认等长交换
+字幕文本位于**每个影片文件内部的 `MSG1` 表**中：
 
 ```
 /event/eNNN/eNNN/eNNN_NNN/E*_NNN.PM1      79 files, 1374 entries
 ```
 
-`.PM1` is a `PMD1` container; the MSG1 table (chunk id 6) *is* the subtitle
-store - there is no separate `.msg` chunk.  An entry is
-`name[16] reserved[8] lines voice[lines] length text`.
+`.PM1` 是 `PMD1` 容器；MSG1 表（区块 ID 6）*就是*字幕存储区——
+不存在单独的 `.msg` 区块。每个条目的结构为
+`name[16] reserved[8] lines voice[lines] length text`。
 
-**What the randomizer does - and only does:**
+**随机化工具所做的——且仅做这些：**
 
-* every entry of every movie is put into **one pool** and grouped by **text
-  byte length**; each group is shuffled and paired, so a line can come from any
-  other cutscene (654 of 674 pairs cross files);
-* **only the text payload moves, with an identical byte count.**
+* 将每部影片的每个条目放入**同一个池**，按**文本字节长度**分组；
+  每组分别洗乱并配对，因此一句台词可以来自任何其他过场动画
+  （674 对中有 654 对跨文件）；
+* **只移动文本负载，且字节数完全相同。**
 
-That means this is **an equal-length swap, not a full shuffle**: the ~9% of
-lines whose byte length is unique in the whole pool keep their original text.
-Coverage on seed 12345 is 1254 / 1374.
+这意味着这是**等长交换，而非完全洗牌**：整个池中约 9% 的台词，
+其字节长度独一无二，因此会保留原文。种子 12345 的覆盖率为 1254／1374。
 
-**Different text lengths: settled, and the answer differs per layer.**
+**不同文本长度：已有结论，且各层的处理方式不同。**
 
-*CG subtitles: same length, and only the words move.*  The container has room -
-each entry's slot is `size - (32 + 4*lines)` bytes and the retail data leaves
-10831 bytes (20.6% of all text) unused - but swapping subtitles of different
-lengths (voice array untouched, global pairing) made them appear at the wrong
-time and vanish, and some cutscenes lost their subtitles entirely, so **CG
-subtitles always keep their byte length**.
+*CG 字幕：保持等长，只移动文字。* 容器中有空间——每个条目的槽位大小为
+`size - (32 + 4*lines)` 字节，零售版数据有 10831 字节未使用
+（占全部文本的 20.6%）——但交换不同长度的字幕（语音数组不变，全局配对）
+会导致字幕在错误时间出现并消失，部分过场动画甚至完全失去字幕，
+因此 **CG 字幕始终保持其字节长度**。
 
-A CG text is wrapped in **cutscene-specific control codes**:
+CG 文本包裹在**特定于过场动画的控制码**中：
 
 ```
 e601_001   f208ffff f207                  . 0a f214 XX 01 00
 e603_001   f208ffff f41305ffdb08 f207     . 0a f215 00 00 00
 ```
 
-93 `.PM1` files use 334 distinct leading codes and 36 of them do not even share
-one between their own entries, so swapping a **whole** text carried those codes
-into a cutscene that does not know them - which is exactly the "late subtitles /
-subtitles vanish" failure.  CG subtitles now follow the same rule as field
-dialogue: only the plain glyph runs travel, every control byte stays where it was
-and every run keeps its byte length, so each entry also keeps its exact line
-structure.  `--cg-text` (GUI "CG 字幕范围") picks where a run may come from:
-`global` (any cutscene, the default), `file` (the same cutscene only) or `off`
-(leave `.PM1` byte-identical).
+93 个 `.PM1` 文件使用了 334 种不同的前置控制码，其中 36 个文件
+甚至无法在自身条目之间共享同一种控制码。因此，交换**整段**文本会把这些
+控制码带入无法识别它们的过场动画——这正是“字幕延迟／字幕消失”故障的原因。
+现在，CG 字幕遵循与场内对话相同的规则：只有纯文字字形段参与交换，
+每个控制字节都留在原处，每个字段都保持字节长度，因此每个条目也会保持
+其精确的行结构。`--cg-text`（图形界面“CG 字幕范围”）用于选择字段来源：
+`global`（任何过场动画，默认）、`file`（仅限同一过场动画）或
+`off`（使 `.PM1` 保持逐字节不变）。
 
-*The real bug, and the fix.*  Two subtleties cost several in-game failures:
+*真正的缺陷及其修复。* 两个细节曾导致多次游戏内测试失败：
 
-1. `f208ffff f207` + `81ff` + words: that `81ff` is an entry-level **marker**, not
-   text - 1373 of the 1379 CG entries carry it exactly once, always at the very
-   start.  0x81 is a Shift-JIS lead byte, so the mask folds it into the first run.
-   It survives by luck while only CG runs can be donors (they nearly all start
-   with it); widening the donor pool to the field scripts deleted it.
-2. **A code's operands can look exactly like glyphs.**  `f208ffff f413 05 ff e6 08
-   f207` is a code whose operand pair `e6 08` sits in the lead-byte range, so it was
-   cut out as a 2-byte "text run" and swapped - corrupting the control block into
-   `f208ffff f413 05 ff 81 ff f207`.  That entry stopped displaying, and its voice
-   (keyed to the subtitle) stopped with it, and **the whole cutscene stopped after
-   that line** - the "subtitles and voice disappear part way through" report.
+1. `f208ffff f207` + `81ff` + 文字：其中的 `81ff` 是条目级**标记**，
+   不是文本——1379 个 CG 条目中有 1373 个恰好包含一次该标记，且始终位于
+   最开头。0x81 是 Shift-JIS 前导字节，因此掩码会将其并入第一个字段。
+   当只有 CG 字段可以作为来源时，它侥幸得以保留（这些字段几乎都以它开头）；
+   将来源池扩大到场内脚本后，该标记便被删除了。
+2. **控制码的操作数可能看起来与字形完全相同。**
+   `f208ffff f413 05 ff e6 08 f207` 是一个控制码，其操作数对 `e6 08`
+   位于前导字节范围内，因此曾被截取为双字节“文本字段”并参与交换，
+   导致控制块损坏为 `f208ffff f413 05 ff 81 ff f207`。该条目停止显示，
+   与之绑定的语音（由字幕索引）也随之停止，**整个过场动画在该句之后中断**——
+   这就是“字幕和语音在中途消失”的报告。
 
-Both are fixed by refusing to swap any run shorter than `MIN_SWAP_RUN = 4` bytes:
-code operands are short, real text is long.  Checking every pinned byte of every
-CG entry against retail:
+修复方法是不交换任何短于 `MIN_SWAP_RUN = 4` 字节的字段：
+控制码操作数较短，真实文本较长。将每个 CG 条目的所有固定字节与零售版核对：
 
-| build | CG texts changed | pinned bytes rewritten |
+| 构建版本 | 变更的 CG 文本数 | 被改写的固定字节数 |
 |---|---|---|
-| before the fix | 1293 | **196** |
-| now | 1261 | **0** |
+| 修复前 | 1293 | **196** |
+| 现在 | 1261 | **0** |
 
-Seed 11 swaps 1680 of 1766 runs in 877 pairs, with 0 control bytes, 0 lengths and
-0 line shapes changed.  **Verified in game**: the words are scrambled while the
-subtitles still appear and hold at the right time, keep the original number of
-lines, and nothing disappears part way through.  The 225 runs no longer eligible
-are all two bytes - code operands, or a single-glyph line.
+种子 11 会在 877 对中交换 1766 个字段中的 1680 个，控制字节、长度和行结构
+的变更数均为 0。**已在游戏中验证**：文字会被打乱，但字幕仍在正确时间出现
+并保持，行数不变，也不会在中途消失。不再符合条件的 225 个字段均为双字节——
+要么是控制码操作数，要么是单字行。
 
-*Randomizing the VOICE: not implemented.*  It was explored and dropped.  What was
-established, and is worth keeping: a CG cutscene is one of two kinds - 44 are
-pre-rendered movies (`/MOVIE`, `/MOVIE2`, `/MOVIE3`; the opening one is
-`/MOVIE2/E601_001.IPS`) whose audio is inside the MPEG stream, and 49 run in
-engine with one clip per spoken line at `/voice/<name[:8]>.ADB` (432 files, 11 KB
-to 2 MB, almost all different sizes).  Nothing else names those clips - searching
-every `.bf` script for the 24 entry names of `E639_001.PM1` finds **0** - so the
-engine opens the clip from the entry's own 16-byte name field.  **Swapping those
-names failed in game**: subtitles stopped resolving and the changed lines had no
-audio, so an entry's name is the subtitle's own identity and must never be
-touched.  Exchanging the clips' APCM payloads with `voice.shuffled_bytes` (which
-keeps each file's header, stop/end markers and exact byte size) was built but
-never verified on its own, and was rolled back with the rest.
+*语音随机化：未实现。* 曾进行探索，但最终放弃。已经确认且值得保留的信息是：
+CG 过场动画分为两类——44 个是预渲染影片（`/MOVIE`、`/MOVIE2`、`/MOVIE3`；
+开场影片为 `/MOVIE2/E601_001.IPS`），音频位于 MPEG 流中；另外 49 个在引擎内
+运行，每句台词对应 `/voice/<name[:8]>.ADB` 中的一个剪辑（432 个文件，
+大小从 11 KB 到 2 MB，几乎所有文件大小都不同）。没有其他数据引用这些剪辑——
+在每个 `.bf` 脚本中搜索 `E639_001.PM1` 的 24 个条目名称，结果为 **0**——
+因此引擎会通过条目自身的 16 字节名称字段打开剪辑。**在游戏中交换这些名称
+会导致失败**：字幕无法解析，被修改的台词没有音频，所以条目名称就是字幕自身的
+身份标识，绝不能修改。曾实现使用 `voice.shuffled_bytes` 交换剪辑的 APCM 负载
+（保留每个文件的头部、停止／结束标记和精确字节大小），但从未单独验证，
+最后已与其余改动一并回滚。
 
-*Field / NPC dialogue: yes, opt-in.*  `--field-varlen` (GUI "允许不同长度的场内
-对话互换", off by default) lets the plain text runs between the control codes
-trade places with runs of **any** length.  The whole MSG1 block is then laid out
-again - entries contiguous, every table offset updated - which keeps the block's
-declared size, so the `.bf`, the compressed `BF` member and the `.LB` all keep
-their exact size and the compression layer is not involved at all.  Each block
-has a text budget and runs may only grow while it lasts; blocks that still do not
-fit fall back to the equal-length swap instead of being skipped.
+*场内／NPC 对话：支持，需主动启用。* `--field-varlen`（图形界面
+“允许不同长度的场内对话互换”，默认关闭）允许控制码之间的纯文本字段与
+**任意**长度的字段交换位置。随后会重新布局整个 MSG1 块——条目连续排列，
+更新所有表偏移——从而保持该块声明的大小，使 `.bf`、压缩的 `BF` 成员和
+`.LB` 都保持精确大小，完全不涉及压缩层。每个块都有文本预算，字段只能在
+预算未耗尽时增长；仍然无法容纳的块会回退到等长交换，而不是被跳过。
 
-What makes a different length safe at all is that the engine delimits a message
-by the `u32` length field, not by a `00` terminator: of the 3220 retail field
-entries, **880 are followed immediately by a non-zero byte** (the next entry's
-name) and 228 have no gap at all - a `00` scan would read those as garbage, which
-does not happen in game.  The rebuild updates that length field, so it is the one
-thing that must move and it does.
+不同长度之所以安全，是因为引擎通过 `u32` 长度字段而非 `00` 终止符来界定
+消息：在零售版的 3220 个场内条目中，**880 个条目之后紧跟着非零字节**
+（下一条目的名称），228 个条目之间完全没有间隙——扫描 `00` 会将这些内容
+读成乱码，而游戏中不会发生这种情况。重建过程会更新该长度字段，
+因此这个必须变化的关键值确实会被更新。
 
-The box does not wrap: a field message breaks lines with a `0a` control byte, and
-across the 1908 field messages (6249 lines) the script authors never let a line
-exceed **33 glyph cells** (97.9% are 20 or fewer, 99.5% are 24 or fewer, only
-four lines reach 33).  A swap is therefore also capped so that no line passes 33
-cells - the cap binds 4401 times on seed 11 and the widest line in the whole game
-is still 33 afterwards.
+对话框不会自动换行：场内消息使用 `0a` 控制字节换行；在 1908 条场内消息
+（6249 行）中，脚本作者从未让一行超过 **33 个字形单元**
+（97.9% 为 20 个或更少，99.5% 为 24 个或更少，只有四行达到 33 个）。
+因此，交换也设有上限，确保任何一行都不会超过 33 个单元——在种子 11 下，
+该上限生效 4401 次，交换后整个游戏中最宽的行仍为 33 个单元。
 
-A block's declared size can overrun the section that follows it: 27 blocks do,
-always by two bytes (`.data.msg` claims to end after the `.data.str` section has
-already started).  Rebuilding to the declared size therefore erased the first
-bytes of the next section in two files; the block end is now clamped to the
-`FLW0` section's real extent and the old text is only erased up to the end of the
-original layout.  On seed 11 that swaps 4435 runs, rewrites 64 blocks (4 of them
-falling back) and changes the length of 1812 messages, with 22 containers
-byte-identical in size and nothing written outside a `.data.msg` section.
-Not verified in game yet.
+块的声明大小可能越过其后区块：有 27 个块会如此，且总是超出两个字节
+（`.data.msg` 声称在 `.data.str` 区块已经开始后才结束）。因此，按声明大小
+重建曾擦除两个文件中下一区块的开头字节；现在，块末端会被限制在 `FLW0`
+区块的实际范围内，旧文本也只会清除到原始布局的末尾。在种子 11 下，
+这会交换 4435 个字段、重写 64 个块（其中 4 个回退），并改变 1812 条消息的
+长度；22 个容器的大小保持逐字节一致，且不会向 `.data.msg` 区块之外写入任何内容。
+尚未在游戏中验证。
 
-**What must not change** (each of these was forced by an in-game test):
+**绝不能改变的内容**（每一项都由游戏内测试确认）：
 
-| must stay | why |
+| 必须保持不变 | 原因 |
 |---|---|
-| `u32 @+28` voice array | moving it makes the entry fall back to its ORIGINAL line |
-| CG subtitle byte length | a different length mistimes the whole cutscene's subtitles |
-| field control codes | they point at scene resources; moving one crashes the game |
-| pairing inside one file | that only reorders a cutscene against itself, which looks like nothing happened |
-| file sizes | the DDS3.DDT index and every following offset must not move |
+| `u32 @+28` 语音数组 | 移动它会使条目回退到原始台词 |
+| CG 字幕字节长度 | 长度不同会使整个过场动画的字幕时间错位 |
+| 场内控制码 | 它们指向场景资源；移动其中一个会导致游戏崩溃 |
+| 仅在单个文件内配对 | 那只是让过场动画与自身重新排序，看起来如同什么也没发生 |
+| 文件大小 | DDS3.DDT 索引和之后的所有偏移都不能移动 |
 
-The consequence of the first row is that **the audio no longer follows the
-subtitle** - swapping the voice array kills the text change, and the meaning of
-that array is still unknown.
+第一行的结果是：**音频不再跟随字幕**——交换语音数组会使文本修改失效，
+而该数组的含义仍然未知。
 
-**Field / NPC dialogue does not work at all yet.** `/fld/f/fNNN/fNNN.bf` is only
-a loose copy; the game reads the field script from a compressed `BF` chunk
-inside `/fld/f/fNNN/fNNN_000.LB`, and that codec has not been cracked.
+**场内／NPC 对话目前仍完全无法工作。** `/fld/f/fNNN/fNNN.bf` 只是一份松散副本；
+游戏实际从 `/fld/f/fNNN/fNNN_000.LB` 内压缩的 `BF` 区块读取场内脚本，
+而该编解码器尚未破解。
 
-System prompts (item get, locked doors, shop, quizzes, menus...) are detected
-by entry name and excluded from the in-game pool.
+系统提示（获得物品、上锁的门、商店、问答、菜单……）会按条目名称检测，
+并从游戏内池中排除。
 
-See `docs/METHOD_ENEMY_SWAP.md` section 11 for the byte-level details, the
-five build attempts and the list of open questions.
+有关字节级细节、五次构建尝试和未解决问题清单，请参阅
+`docs/METHOD_ENEMY_SWAP.md` 第 11 节。
 
-## Layout
+## 目录结构
 
 ```
-dds2_randomizer.py          command line entry point
-dds2_randomizer_gui.py      PySide2 GUI (per-layer switches)
-run_gui.bat                 double-click launcher for the GUI
-selftest.py                 parser / shuffler / AI self test
-selftest_gui.py             GUI switches <-> Config self test
-tools/enemy_info.py         enemy inspector (stats, records, recorded AI actions)
-tools/p2s_diff.py           diff the EE RAM of two PCSX2 savestates (RE aid)
-tools/make_release.py       freeze the tree into releases/<version> + zip
+dds2_randomizer.py          命令行入口
+dds2_randomizer_gui.py      PySide2 图形界面（各层独立开关）
+run_gui.bat                 双击启动图形界面
+selftest.py                 解析器／洗牌器／AI 自我测试
+selftest_gui.py             图形界面开关 <-> Config 自我测试
+tools/enemy_info.py         敌人查看器（属性、记录、已记录的 AI 动作）
+tools/p2s_diff.py           比较两个 PCSX2 存档状态的 EE RAM（逆向工程辅助）
+tools/make_release.py       将目录树冻结到 releases/<version> 并打包为 zip
 src/ddstool/
-    iso9660.py   ISO9660 reader/writer
-    ddtimg.py    DDS3.DDT tree parser
-    game.py      Game facade (read/write/listdir/glob)
-    build.py     ISO copy + in-place patcher
-    config.py    options
-    unit.py      UNIT.TBL parser (HP/MP/stats/skills)
-    unitmap.py   enemy id <-> unit record mapping (UNIT_BASE = 127)
-    encount_min.py ENCOUNT.TBL parser
-    aicalc.py    AICALC.TBL: flat action table + FlowScript AI_ACT_SKILL sites
-    msgtbl.py    MSG1 message table parser (exact slots)
-    textdata.py  per-file, voice-binding dialogue shuffle
-    voice.py     APCM .ADB parser + optional shuffle
-    mantra.py    Mantra (曼斗罗) cost / stat bonus / skill list (in SLPM_657.95)
-    model.py     character model slots + the opt-in Black Varuna swap
-    randomizer.py driver
-releases/                    frozen snapshots (source + MANIFEST.json + zip)
+    iso9660.py   ISO9660 读取器／写入器
+    ddtimg.py    DDS3.DDT 目录树解析器
+    game.py      游戏外观接口（读取／写入／列目录／通配符匹配）
+    build.py     ISO 复制＋原地修补器
+    config.py    选项
+    unit.py      UNIT.TBL 解析器（HP／MP／属性／技能）
+    unitmap.py   敌人 ID <-> 单位记录映射（UNIT_BASE = 127）
+    encount_min.py ENCOUNT.TBL 解析器
+    aicalc.py    AICALC.TBL：扁平动作表＋FlowScript AI_ACT_SKILL 位置
+    msgtbl.py    MSG1 消息表解析器（精确槽位）
+    textdata.py  按文件、绑定语音的对话洗牌
+    voice.py     APCM .ADB 解析器＋可选洗牌
+    mantra.py    曼斗罗费用／属性加成／技能列表（位于 SLPM_657.95）
+    model.py     角色模型槽位＋可选的黑色伐楼罗替换
+    randomizer.py 驱动程序
+releases/                    冻结快照（源代码＋MANIFEST.json＋zip）
 ```
 
-## Safety
+## 安全性
 
-* The input ISO is never modified; a fresh output ISO is written (~4.4 GB).
-* Every patched file keeps its original byte size.
-* If the requested output path is locked by another program the tool now
-  stops with a clear error instead of silently writing a different file, and
-  it re-reads the output to confirm the patches landed.
-* `--no-ai-remap` disables the AI re-pointing on its own, leaving everything
-  else in place.
+* 输入 ISO 绝不会被修改；会写入一个全新的输出 ISO（约 4.4 GB）。
+* 每个经过修补的文件都保持原始字节大小。
+* 如果请求的输出路径被其他程序锁定，工具现在会以明确的错误信息停止，
+  而不是悄悄写入另一个文件；它还会重新读取输出，确认补丁已写入。
+* `--no-ai-remap` 可单独禁用 AI 重定向，其他所有内容保持不变。
 
-## Produced output
+## 生成的输出
 
-`DDS2_random_v26.iso` (seed `12345`): 939 normal encounter slots re-pointed
-over a 163-enemy pool, 27 story-battle records left untouched (the dedicated
-boss pass is shielded), 242 AI action slots across 78 unit AI records plus 395
-FlowScript call sites re-pointed with **0 stray bytes**, **1254/1374 CG
-subtitles swapped by equal length across 79 movie files**, system text
-untouched, 0 layout changes.
+`DDS2_random_v26.iso`（种子 `12345`）：在包含 163 个敌人的候选池中，
+重新指向 939 个普通遭遇战槽位；27 条剧情战斗记录保持不变（专用 Boss
+处理已停用保护）；78 条单位 AI 记录中的 242 个 AI 动作槽位，以及 395 个
+FlowScript 调用位置被重新指向，**意外修改字节数为 0**；
+**79 个影片文件中的 1254／1374 条 CG 字幕完成跨文件等长交换**；
+系统文本保持不变，布局变更为 0。
 
-Open items: field / NPC dialogue (blocked on the `.LB` chunk codec), CG voice
-sync, and the remaining 9% of CG lines that have no equal-length partner.
+待办事项：场内／NPC 对话（受 `.LB` 区块编解码器阻碍）、CG 语音同步，
+以及剩余约 9% 没有等长配对对象的 CG 台词。
 
-## Documentation
+## 文档
 
-* `docs/METHOD_ENEMY_SWAP.md` - the algorithm, the verified constants, the
-  AICALC.TBL layout and the ISO-wide FlowScript scan (Chinese)
-* `FINDINGS.md` - raw reverse-engineering notes (English)
-* `docs/REPORT.md` - format specification + confidence levels (Chinese)
-* `docs/USAGE_zh.md` - 中文使用说明
+* `docs/METHOD_ENEMY_SWAP.md`——算法、已验证常量、AICALC.TBL 布局，
+  以及整个 ISO 范围内的 FlowScript 扫描（中文）
+* `FINDINGS.md`——原始逆向工程笔记（英文）
+* `docs/REPORT.md`——格式规范＋置信度等级（中文）
+* `docs/USAGE_zh.md`——中文使用说明
