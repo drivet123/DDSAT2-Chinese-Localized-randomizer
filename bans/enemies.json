@@ -1,0 +1,7 @@
+{
+  "ban": [
+    120,
+    121
+  ],
+  "_comment": "enemy ids that must never appear as field encounters"
+}

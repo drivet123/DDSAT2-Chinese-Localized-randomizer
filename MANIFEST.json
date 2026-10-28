@@ -1,0 +1,263 @@
+{
+  "name": "DDS2 randomizer",
+  "version": "2.5",
+  "frozen": "2026-10-07 21:48:28",
+  "files": 48,
+  "bytes": 1016507,
+  "entry_points": {
+    "gui": "dds2_randomizer_gui.py  (or run_gui.bat)",
+    "cli": "dds2_randomizer.py --help",
+    "selftest": "selftest.py, selftest_gui.py",
+    "enemy inspector": "tools/enemy_info.py <id>",
+    "savestate differ": "tools/p2s_diff.py before.p2s after.p2s"
+  },
+  "requires": "Python 3.7+; PySide2 for the GUI",
+  "not_included": [
+    "the game image (DDSAGA2.iso)",
+    "scratch/ experiments",
+    "built ISOs",
+    "the rest of workdir/ (dumps, extracted ISO tree)"
+  ],
+  "contents": [
+    {
+      "path": "FINDINGS.md",
+      "size": 4148,
+      "sha256": "cdf4def5ca55f1ba5107c5b42ab08395e2881873fe9befeebd8b2faf2d9e05ad"
+    },
+    {
+      "path": "README.md",
+      "size": 21224,
+      "sha256": "d0f6499020f7cd8b83330faf8b0817653e7601a5c4b89b888ae55087c8ed7ec1"
+    },
+    {
+      "path": "VERSION",
+      "size": 4,
+      "sha256": "686513ed91231892fbf0c4e72acee20264caa8538e8389157a942a808dba6531"
+    },
+    {
+      "path": "bans/enemies.json",
+      "size": 111,
+      "sha256": "ca1cc71812cec3a95a9fefc123a68ab862fc006eb92081dcdae34df490e5067e"
+    },
+    {
+      "path": "bans/enemy_names.json",
+      "size": 2780,
+      "sha256": "c6ffe9523eab705089a19b485f4a780a886ff2b373a29b8ee29bfe17df85c76b"
+    },
+    {
+      "path": "bans/example.json",
+      "size": 118,
+      "sha256": "eaef4240d6a7a2e042eb3f6cb0dc602f28a2c9d57d0453d36cec903bed9d7536"
+    },
+    {
+      "path": "dds2_randomizer.py",
+      "size": 8479,
+      "sha256": "a4e50871067aab2c006c1e77933ff943cf98554ef414db16d47ecba24f7c7be9"
+    },
+    {
+      "path": "dds2_randomizer_gui.py",
+      "size": 22660,
+      "sha256": "857e5a2c1ba3428e414720455226b5aec56207771a56a46980adf02316220b30"
+    },
+    {
+      "path": "docs/FINDINGS_ENCOUNTER.md",
+      "size": 7957,
+      "sha256": "a2ad205d0e21ade01ab5ac503815091330d4044ad4a6effeddf336806580857a"
+    },
+    {
+      "path": "docs/METHOD_ENEMY_SWAP.md",
+      "size": 92124,
+      "sha256": "5944c14244f31a3714fe22d7edc46b77250f5d3450aa7ef5b6dcefdab5ef468d"
+    },
+    {
+      "path": "docs/REPORT.md",
+      "size": 8300,
+      "sha256": "3fd689b4cc1c5e935da16d3af13eefda3d892a83ca038c2b8c288184e9313057"
+    },
+    {
+      "path": "docs/USAGE_zh.md",
+      "size": 3222,
+      "sha256": "f7c5296555cb77b59fc2787089319725f95e0968d306fb0d5a7bef3752b53cc3"
+    },
+    {
+      "path": "run_gui.bat",
+      "size": 112,
+      "sha256": "84589ae743b67a7db91157a88471605c4fd1708eec62c9ec4fd6cfa5771a18d8"
+    },
+    {
+      "path": "selftest.py",
+      "size": 43729,
+      "sha256": "8b9379a0f1f26e5ed1f2332f75c29dc4dd20d25ad7f994f1097061ac5a237a50"
+    },
+    {
+      "path": "selftest_gui.py",
+      "size": 5398,
+      "sha256": "398e5c46dc42f2891cc3f5a05e3500df67e1cc9ae9d9a8ce17e74242c5318820"
+    },
+    {
+      "path": "src/ddstool/__init__.py",
+      "size": 94,
+      "sha256": "24a6bc214b617e01170c69337ecb977246038a5a63e95da74ac998be1ac1e952"
+    },
+    {
+      "path": "src/ddstool/aicalc.py",
+      "size": 10314,
+      "sha256": "513e2cf14343473f1a5812bc867fd6b58c6311952058f9ed3c9c0759c1f7c499"
+    },
+    {
+      "path": "src/ddstool/analyse.py",
+      "size": 4151,
+      "sha256": "bb24e53022f884477d62b70d7f72acbe1a08ca7c1bf576a9231537a285e39f06"
+    },
+    {
+      "path": "src/ddstool/build.py",
+      "size": 2133,
+      "sha256": "755c464981a4b512b2f24d43565742006818faeda0cd56f55d9bd06ddd9e7e4f"
+    },
+    {
+      "path": "src/ddstool/config.py",
+      "size": 8165,
+      "sha256": "03c3843684204ed3b6677f1dccc05d0d3f08f762446ff693c8631d2162eb2e42"
+    },
+    {
+      "path": "src/ddstool/ddtimg.py",
+      "size": 4317,
+      "sha256": "e67c0c5e40097dcadec114b45903630b4586cfd45ed9a103c12a3ce19e040314"
+    },
+    {
+      "path": "src/ddstool/encount_min.py",
+      "size": 2067,
+      "sha256": "e71fd2414e6a68c2714828d425733c0304d0399e3e7cc9bca5806294e3a3092d"
+    },
+    {
+      "path": "src/ddstool/game.py",
+      "size": 5992,
+      "sha256": "fdcd978994fd56c43e30b648a314785389de6f4202d3575db5d5ac69439af999"
+    },
+    {
+      "path": "src/ddstool/iso9660.py",
+      "size": 4616,
+      "sha256": "97ce136abbdf57a178c83925ab179a53457eb0b28955b2ba44f1da12430a9b41"
+    },
+    {
+      "path": "src/ddstool/lb.py",
+      "size": 7673,
+      "sha256": "fe84b92349f7e93badcaf1ecc0324ae84e6045bf7a59fddefe2c4a37cf9b8402"
+    },
+    {
+      "path": "src/ddstool/lbcmp.py",
+      "size": 11709,
+      "sha256": "bf6e71286c1af591d08680628b726065d2c74453c9ede55aca57d8b46169491c"
+    },
+    {
+      "path": "src/ddstool/lbcmp_enc.py",
+      "size": 18089,
+      "sha256": "2febbe9b0af41bbafef949a1f4b0b906bdbba18de693b4549f1e4fe92af93fee"
+    },
+    {
+      "path": "src/ddstool/lzo.py",
+      "size": 3422,
+      "sha256": "adc2cd5a65faafb3fbdfbd0c24a80f25557b31f431968ee98b8a0b3dc8e3e1bc"
+    },
+    {
+      "path": "src/ddstool/mantra.py",
+      "size": 9110,
+      "sha256": "de7e486aee362e9d3d6e2ff940affee90a0527d4cc3e0d38d62519301abc769e"
+    },
+    {
+      "path": "src/ddstool/model.py",
+      "size": 8031,
+      "sha256": "9e91dc94808a1e263d29d62e8713a890b5860715284a67163d6161de004ed049"
+    },
+    {
+      "path": "src/ddstool/msg1.py",
+      "size": 3109,
+      "sha256": "45b5856b0585f5c5d1585b84a306d010b26f154af83ac09df54cbebed465a924"
+    },
+    {
+      "path": "src/ddstool/msgtbl.py",
+      "size": 8173,
+      "sha256": "774efb0ca5684b143f84f11e98092ace82af9eb3b01f859efdea3241a3c53c49"
+    },
+    {
+      "path": "src/ddstool/randomizer.py",
+      "size": 43686,
+      "sha256": "172f82cea776b1127204cfb83b4531860358ae110dab594bdb0500509e505faf"
+    },
+    {
+      "path": "src/ddstool/textdata.py",
+      "size": 30104,
+      "sha256": "8fc83bd782aae01d2a669e900b6270fed608b5d2d491368a752b440e5334dfc0"
+    },
+    {
+      "path": "src/ddstool/unit.py",
+      "size": 4596,
+      "sha256": "e04dd4ff92f4e5929f5d80b0fce03eba8c9534f8a3eb335950c3521ca02164ae"
+    },
+    {
+      "path": "src/ddstool/unitmap.py",
+      "size": 1945,
+      "sha256": "1657f5ff40c19d5d9105d7197fe275c00582dd440f0674869a1e9fb595d3c0d3"
+    },
+    {
+      "path": "src/ddstool/voice.py",
+      "size": 17227,
+      "sha256": "9c09c8c251c27c6368b8b66d1471c1974290562dba5ac15f9691c22b26eadd59"
+    },
+    {
+      "path": "tools/enemy_info.py",
+      "size": 10579,
+      "sha256": "4c62d8b295d1a7ac9b839e4694adb516229b002dd3e42de6f3f41f530235f1e3"
+    },
+    {
+      "path": "tools/lb_probe.py",
+      "size": 5132,
+      "sha256": "129a232531d16d35499231ad3ba5378a14f0b0ec88ce2ba59d0adecad9771713"
+    },
+    {
+      "path": "tools/make_release.py",
+      "size": 5329,
+      "sha256": "f0a03916ee1c9da8be0128b628b034ed08d78c3bbae97c492ba70489ee4609d0"
+    },
+    {
+      "path": "tools/p2s_diff.py",
+      "size": 3954,
+      "sha256": "fdc4315ff5e3130af8a837384dad05fa997a41136191b5b7a0726309548599f4"
+    },
+    {
+      "path": "workdir/FlowScriptAssemblyReference.txt",
+      "size": 2074,
+      "sha256": "f4b32c03a85e7affbcfebeb5d1d5c694e45dd5252b3cd23d4a38178dccd43a94"
+    },
+    {
+      "path": "workdir/FlowScriptBFFormatReference.txt",
+      "size": 2406,
+      "sha256": "0123156da44387e7f65ef2bb069bf1cc4b243db98cb9bc7e6ce7b9d14e2514ae"
+    },
+    {
+      "path": "workdir/FlowScriptModules.json",
+      "size": 295,
+      "sha256": "7551bb83fdcc9f303da203702ada35e8bbad7d0bbc582e5111a47e86549d92d9"
+    },
+    {
+      "path": "workdir/dds_functions.json",
+      "size": 133282,
+      "sha256": "f64a657cadad114cc71d3e517cc63779c154762eb5b6ef23ce493787cb928f88"
+    },
+    {
+      "path": "workdir/global_scan.json",
+      "size": 388745,
+      "sha256": "4f29db12b1104827c452e081df77223b78e7699d9c515c9b4eca402c1caac25b"
+    },
+    {
+      "path": "workdir/msg1_scan.json",
+      "size": 18624,
+      "sha256": "c65e531f01f59b8d85d401f7cdf098bf3ff9186b1c31c951fded59471d3cf20a"
+    },
+    {
+      "path": "workdir/voice_refs.json",
+      "size": 16998,
+      "sha256": "9c49b77c15a980df2697e95574037591387a2bc4e1cc4df9e75927b0b7e10238"
+    }
+  ]
+}
